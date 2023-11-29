@@ -92,6 +92,13 @@ def handle_delete_event(event, values, car_list2, table_data, window):
         delCar(car_list2, table_data, values['-Table-'][0])
         window['-Table-'].update(table_data)
 
+
+        # Actualizar la tabla en la interfaz principal
+        table_data.clear()
+        for o in car_list2:
+            table_data.append([o.ID, o.model, o.factory, o.plate])
+        window['-Table-'].update(table_data)
+
 def handle_modify_event(event, values, car_list2, table_data, window):
     valida = False
     if re.match(pattern_ID, values['-ID-']):
@@ -201,6 +208,29 @@ def interfaz():
         if event == 'Modify':
             handle_modify_event(event, values, car_list2, table_data, window)
 
+        if event == 'Sort File':
+            # Crear una nueva ventana con un combo box
+            layout = [[sg.Text('Select a value to sort by')],
+                      [sg.Combo(['ID', 'model', 'factory', 'plate'], key='-COMBO-')],
+                      [sg.Button('OK')]]
+            sort_window = sg.Window('Sort File', layout)
+
+            while True:  # Bucle de eventos para la nueva ventana
+                sort_event, sort_values = sort_window.read()
+                if sort_event == sg.WINDOW_CLOSED or sort_event == 'OK':
+                    break
+
+            sort_window.close()
+
+            # Leer el archivo CSV en un DataFrame
+            df = pd.read_csv('Car.csv')
+
+            # Ordenar el DataFrame en base al valor seleccionado en el combo box
+            df.sort_values(by=sort_values['-COMBO-'], inplace=True)
+
+            # Escribir el DataFrame ordenado de nuevo en el archivo CSV
+            df.to_csv('Car.csv', index=False)
+
         # Manejo del evento de clic en la tabla para ordenar
         if isinstance(event, tuple):
             if event[0] == '-Table-':
@@ -208,6 +238,9 @@ def interfaz():
                     col_num_clicked = event[2][1]
                     table_data = sort_table(table_data, (col_num_clicked, 0))
                     window['-Table-'].update(table_data)
+
+
+
 
     # Cierre de la ventana al salir del bucle
     window.close()
