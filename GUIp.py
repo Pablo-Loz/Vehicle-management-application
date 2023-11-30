@@ -14,6 +14,16 @@ car_list2 = []
 pattern_ID = r"\d{3}"
 pattern_phone = r"\d{3}-\d{6}"
 
+def purgeCars(car_list, t_CarInterfaz):
+    # Leer el archivo CSV y almacenar los datos en un DataFrame
+    df = pd.read_csv('Car.csv')
+
+    # Eliminar las filas que tienen 'erase' como True
+    df = df[df['erase'] != True]
+
+    # Guardar el DataFrame de nuevo en el archivo CSV
+    df.to_csv('Car.csv', index=False)
+
 
 
 # Función para agregar un nuevo automóvil a la lista y guardar los datos en un archivo CSV
@@ -29,7 +39,8 @@ def delCar(car_list, t_CarInterfaz, posinTable):
     df = pd.read_csv('Car.csv')
 
     # Buscar la fila que tenga el mismo ID que el coche que se quiere eliminar
-    mask = df['ID'] == t_CarInterfaz[posinTable][0]
+    car_id = t_CarInterfaz[posinTable][0]
+    mask = df['ID'] == car_id
 
     # Si se encuentra tal fila, cambiar el valor de 'erase' a True
     df.loc[mask, 'erase'] = True
@@ -39,12 +50,15 @@ def delCar(car_list, t_CarInterfaz, posinTable):
 
     # Actualizar la lista de coches en memoria
     for o in car_list:
-        if o.ID == t_CarInterfaz[posinTable][0]:
+        if o.ID == car_id:
             o.erased = True
             break
 
-    # Eliminar el coche de la lista de la interfaz
-    t_CarInterfaz.remove(t_CarInterfaz[posinTable])
+    # Buscar el coche en la lista de la interfaz y eliminarlo
+    for i, car in enumerate(t_CarInterfaz):
+        if car[0] == car_id:
+            del t_CarInterfaz[i]
+            break
 
 
 # Función para actualizar un automóvil en la lista y el archivo CSV
@@ -79,26 +93,32 @@ def updateCar(car_list, t_row_CarInterfaz):
         print("Error: No se encontró un coche con el ID proporcionado.")
 
 def handle_add_event(event, values, car_list2, table_data, window):
-    valida = False
-    if re.match(pattern_ID, values['-ID-']):
-        if re.match(pattern_phone, values['-Plate-']):
-            valida = True
-    if valida:
-        add_car(car_list2, table_data, Car(values['-ID-'], values['-Model-'], values['-Factory-'],values['-Plate-']))
-        window['-Table-'].update(table_data)
+    # Comprobar si todos los campos están llenos
+    if all([values['-ID-'], values['-Model-'], values['-Factory-'], values['-Plate-']]):
+        valida = False
+        if re.match(pattern_ID, values['-ID-']):
+            if re.match(pattern_phone, values['-Plate-']):
+                valida = True
+        if valida:
+            add_car(car_list2, table_data, Car(values['-ID-'], values['-Model-'], values['-Factory-'],values['-Plate-']))
+            window['-Table-'].update(table_data)
+    else:
+        # Mostrar un pop-up si alguno de los campos está vacío
+        sg.popup_error('Todos los campos deben estar rellenados')
+
 
 def handle_delete_event(event, values, car_list2, table_data, window):
     if len(values['-Table-']) > 0:
         delCar(car_list2, table_data, values['-Table-'][0])
-        window['-Table-'].update(table_data)
 
-
-        # Actualizar la tabla en la interfaz principal
+        # Actualizar table_data
         table_data.clear()
         for o in car_list2:
-            table_data.append([o.ID, o.model, o.factory, o.plate])
-        window['-Table-'].update(table_data)
+            if not o.erased:
+                table_data.append([o.ID, o.model, o.factory, o.plate])
 
+        # Actualizar la tabla en la interfaz gráfica de usuario
+        window['-Table-'].update(table_data)
 def handle_modify_event(event, values, car_list2, table_data, window):
     valida = False
     if re.match(pattern_ID, values['-ID-']):
@@ -118,14 +138,7 @@ def handle_modify_event(event, values, car_list2, table_data, window):
         window['-Table-'].update(table_data)
         window['-ID-'].update(disabled=False)
 
-# Función para ordenar la tabla por múltiples columnas
-def sort_table(table, cols):
-    for col in reversed(cols):
-        try:
-            table = sorted(table, key=operator.itemgetter(col))
-        except Exception as e:
-            sg.popup_error('Error in sort_table', 'Exception in sort_table', e)
-    return table
+
 
 
 # Función principal que define la interfaz gráfica y maneja eventos
@@ -231,13 +244,11 @@ def interfaz():
             # Escribir el DataFrame ordenado de nuevo en el archivo CSV
             df.to_csv('Car.csv', index=False)
 
-        # Manejo del evento de clic en la tabla para ordenar
-        if isinstance(event, tuple):
-            if event[0] == '-Table-':
-                if event[2][0] == -1:  # Header was clicked
-                    col_num_clicked = event[2][1]
-                    table_data = sort_table(table_data, (col_num_clicked, 0))
-                    window['-Table-'].update(table_data)
+        if event == 'Purge':
+            purgeCars(car_list2, table_data)
+            window['-Table-'].update(table_data)
+
+
 
 
 

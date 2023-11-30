@@ -1,5 +1,3 @@
 ID,model,factory,plate,erase,erased
 231,Jeep,Augai,231-456456,False,
-321,Citroen,Factoria3,231-456456,False,
-254,Mazda,Factoria345,789-654254,False,
-267,Toyota,Facotria23,875-521456,False,
+321,Citroen,FactoriaDireccion,231-456456,False,
