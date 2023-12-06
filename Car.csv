@@ -1,3 +1,6 @@
 ID,model,factory,plate,erase,erased
-231,Jeep,Augai,231-456456,False,
-321,Citroen,FactoriaDireccion,231-456456,False,
+111,Peugeot,Calle Los Alfajores,789-456123,False,
+123,Mazda,Calle Los Lamentos,415-456126,False,
+124,PeugeotCopia,feffuji,798-123456,False,
+254,Ferrari,Calle La mamma mia,254-639852,False,
+554,Jeep,Direccion Ejemplo1,115-698532,False,

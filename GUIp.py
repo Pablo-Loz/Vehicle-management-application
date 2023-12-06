@@ -6,119 +6,143 @@ import re
 import operator
 import pandas as pd
 
-
-# Lista que almacenará los objetos Car leídos desde el archivo CSV
+# List that will store the Car objects read from the CSV file
 car_list2 = []
 
-# Definición de patrones de expresiones regulares para validación
+# Definition of regular expression patterns for validation
 pattern_ID = r"\d{3}"
 pattern_phone = r"\d{3}-\d{6}"
 
+
 def purgeCars(car_list, t_CarInterfaz):
-    # Leer el archivo CSV y almacenar los datos en un DataFrame
+    # Read the CSV file and store the data in a DataFrame
     df = pd.read_csv('Car.csv')
 
-    # Eliminar las filas que tienen 'erase' como True
+    # Delete rows that have 'erase' set to True
     df = df[df['erase'] != True]
 
-    # Guardar el DataFrame de nuevo en el archivo CSV
+    # Save the DataFrame back to the CSV file
     df.to_csv('Car.csv', index=False)
 
 
-
-# Función para agregar un nuevo automóvil a la lista y guardar los datos en un archivo CSV
+# Function to add a new car to the list and save the data in a CSV file.
 def add_car(car_list, t_CarInterfaz, oCar):
-    saveCarCSV('Car.csv', oCar)
-    car_list.append(oCar)  # Agrega el objeto Car a la lista
+    save_car_csv('Car.csv', oCar)
+    car_list.append(oCar)  # Add the Car object to the list
     t_CarInterfaz.append([oCar.ID, oCar.model, oCar.factory, oCar.plate])
 
 
-# Función para eliminar un automóvil de la lista y actualizar la interfaz y el archivo CSV
+# Function to remove a car from the list and update the interface and the CSV file.
 def delCar(car_list, t_CarInterfaz, posinTable):
-    # Leer el archivo CSV y almacenar los datos en un DataFrame
+    # Read the CSV file and store the data in a DataFrame
     df = pd.read_csv('Car.csv')
 
-    # Buscar la fila que tenga el mismo ID que el coche que se quiere eliminar
+    # Search for the row that has the same ID as the car to be deleted
     car_id = t_CarInterfaz[posinTable][0]
     mask = df['ID'] == car_id
 
-    # Si se encuentra tal fila, cambiar el valor de 'erase' a True
+    # If such row is found, set the 'erase' value to True
     df.loc[mask, 'erase'] = True
 
-    # Guardar el DataFrame de nuevo en el archivo CSV
+    # Save the DataFrame back to the CSV file
     df.to_csv('Car.csv', index=False)
 
-    # Actualizar la lista de coches en memoria
+    # Search for the car in the list and delete it
     for o in car_list:
         if o.ID == car_id:
             o.erased = True
             break
 
-    # Buscar el coche en la lista de la interfaz y eliminarlo
+    # Delete the car from the interface list
     for i, car in enumerate(t_CarInterfaz):
         if car[0] == car_id:
             del t_CarInterfaz[i]
             break
 
 
-# Función para actualizar un automóvil en la lista y el archivo CSV
+def check_id_exists(csv_filename, id_to_check):
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(csv_filename)
+
+    # Convert the ID column to string
+    df['ID'] = df['ID'].astype(str)
+
+    # Check if the ID exists in the ID column
+    if str(id_to_check) in df['ID'].values:
+        return True
+    else:
+        return False
+
+
+# Function to update a car in the list and update the interface and the CSV file.
 def updateCar(car_list, t_row_CarInterfaz):
-    # Leer el archivo CSV y almacenar los datos en un DataFrame
+    # Read the CSV file and store the data in a DataFrame
     df = pd.read_csv('Car.csv')
 
-    # Convertir el ID a string antes de hacer la comparación
+    # Get the ID of the car to be updated
     car_id = str(t_row_CarInterfaz[0])
     df['ID'] = df['ID'].astype(str)
 
-    # Buscar la fila que tenga el mismo ID que el coche que se quiere actualizar
+    # Search for the row that has the same ID as the car to be updated
     mask = df['ID'] == car_id
 
-    # Si se encuentra tal fila, actualizar los valores de esa fila con los nuevos valores del coche
+    #   If such row is found, update the values of the columns
     if df.loc[mask].shape[0] > 0:
         df.loc[mask, 'model'] = t_row_CarInterfaz[1]
         df.loc[mask, 'factory'] = t_row_CarInterfaz[2]
         df.loc[mask, 'plate'] = t_row_CarInterfaz[3]
-        #df.loc[mask, 'erased'] = False  # Asegurarse de que el estado 'erased' se establece en False
 
-        # Guardar el DataFrame de nuevo en el archivo CSV
+        # Save the DataFrame back to the CSV file
         df.to_csv('Car.csv', index=False)
 
-        # Actualizar la lista de coches en memoria
+        # Search for the car in the list and update it
         for o in car_list:
             if o.ID == car_id:
                 o.setCar(t_row_CarInterfaz[1], t_row_CarInterfaz[2], t_row_CarInterfaz[3])
-                o.erased = False  # Asegurarse de que el estado 'erased' se establece en False
+                o.erased = False  # Set the 'erased' value to False
                 break
     else:
         print("Error: No se encontró un coche con el ID proporcionado.")
 
+
 def handle_add_event(event, values, car_list2, table_data, window):
-    # Comprobar si todos los campos están llenos
-    if all([values['-ID-'], values['-Model-'], values['-Factory-'], values['-Plate-']]):
-        valida = False
-        if re.match(pattern_ID, values['-ID-']):
-            if re.match(pattern_phone, values['-Plate-']):
-                valida = True
-        if valida:
-            add_car(car_list2, table_data, Car(values['-ID-'], values['-Model-'], values['-Factory-'],values['-Plate-']))
-            window['-Table-'].update(table_data)
+    # Check if all fields have been filled
+    if (check_id_exists('Car.csv', values['-ID-'])):
+        sg.popup_error('El ID ya existe')
+        return
     else:
-        # Mostrar un pop-up si alguno de los campos está vacío
-        sg.popup_error('Todos los campos deben estar rellenados')
+
+        if all([values['-ID-'], values['-Model-'], values['-Factory-'], values['-Plate-']]):
+            valida = False
+            if re.match(pattern_ID, values['-ID-']):
+                if re.match(pattern_phone, values['-Plate-']):
+                    valida = True
+            if valida:
+                # Check if the ID already exists
+
+                # Add the new car to the list and update the interface
+                add_car(car_list2, table_data,
+                        Car(values['-ID-'], values['-Model-'], values['-Factory-'], values['-Plate-']))
+                window['-Table-'].update(table_data)
+        else:
+            # Show an error message if any of the fields is empty
+            sg.popup_error('Todos los campos deben estar rellenados')
 
 
 def handle_delete_event(event, values, car_list2, table_data, window):
     if len(values['-Table-']) > 0:
         delCar(car_list2, table_data, values['-Table-'][0])
 
-        # Actualizar table_data
+        # Update the table in the GUI
         table_data.clear()
         for o in car_list2:
             if not o.erased:
                 table_data.append([o.ID, o.model, o.factory, o.plate])
 
-        # Actualizar la tabla en la interfaz gráfica de usuario
+        # Update the table in the GUI
         window['-Table-'].update(table_data)
+
+
 def handle_modify_event(event, values, car_list2, table_data, window):
     valida = False
     if re.match(pattern_ID, values['-ID-']):
@@ -139,31 +163,29 @@ def handle_modify_event(event, values, car_list2, table_data, window):
         window['-ID-'].update(disabled=False)
 
 
-
-
-# Función principal que define la interfaz gráfica y maneja eventos
+# Function to read the data from the CSV file and store it in a list of Car objects.
 def interfaz():
     # Definición de fuentes para la interfaz
     font1, font2 = ('Arial', 14), ('Arial', 16)
 
-    # Configuración de la apariencia de PySimpleGUI
+    # Configure the PySimpleGUI theme
     sg.theme('Reddit')
     sg.set_options(font=font1)
 
-    # Lista que almacenará los datos para la tabla en la interfaz
+    # List that will store the data to be displayed in the table
     table_data = []
 
-    # Lista que se utilizará para actualizar un automóvil existente
+    # List that will store the data of the row to be updated
     rowToUpdate = []
 
-    # Lectura de datos desde el archivo CSV
-    car_list2 = readCarCSV('Car.csv')
+    # Read the CSV file and store the data in a list of Car objects
+    car_list2 = read_car_csv('Car.csv')
 
-    # Llenado de la lista de datos para la tabla
+    # Store the data of the Car objects in the list to be displayed in the table
     for o in car_list2:
         table_data.append([o.ID, o.model, o.factory, o.plate])
 
-    # Definición de la disposición de la interfaz
+    # Definition of the layout of the GUI
     layout = [
                  [sg.Push(), sg.Text('Car CRUD'), sg.Push()]] + [
                  [sg.Text(text), sg.Push(), sg.Input(key=key)] for key, text in Car.fields.items()] + [
@@ -178,28 +200,28 @@ def interfaz():
                  [sg.Button('Purge'), sg.Push(), sg.Button('Sort File')],
              ]
     sg.theme('Topanga')
-    # Creación de la ventana de PySimpleGUI
+    # Create the window
     window = sg.Window('Car Management with CSV', layout, finalize=True)
 
     window['-Table-'].bind("<Double-Button-1>", " Double")
 
-    # Bucle principal para manejar eventos de la interfaz
+    # Event loop. Read buttons, make callbacks
     while True:
         event, values = window.read()
 
-        # Manejo del evento de cerrar la ventana
+        # Manage the window closing event
         if event == sg.WIN_CLOSED:
             break
 
-        # Manejo del evento de agregar un automóvil
+        # Manage the event of adding a new car
         if event == 'Add':
             handle_add_event(event, values, car_list2, table_data, window)
 
-        # Manejo del evento de eliminar un automóvil
+        # Manage the event of deleting a car
         if event == 'Delete':
             handle_delete_event(event, values, car_list2, table_data, window)
 
-        # Manejo del evento de doble clic en la tabla
+        # Manage the event of double clicking on a row in the table
         if event == '-Table- Double':
             if len(values['-Table-']) > 0:
                 row = values['-Table-'][0]
@@ -209,7 +231,7 @@ def interfaz():
                 window['-Factory-'].update(str(table_data[row][2]))
                 window['-Plate-'].update(str(table_data[row][3]))
 
-        # Manejo del evento de limpiar campos
+        # Manage the event of clearing the fields
         if event == 'Clear':
             window['-ID-'].update(disabled=False)
             window['-ID-'].update('')
@@ -217,47 +239,46 @@ def interfaz():
             window['-Factory-'].update('')
             window['-Plate-'].update('')
 
-        # Manejo del evento de modificar un automóvil
+        # Manage the event of modifying a car
         if event == 'Modify':
             handle_modify_event(event, values, car_list2, table_data, window)
 
+        # Manage the event of sorting the file
         if event == 'Sort File':
-            # Crear una nueva ventana con un combo box
-            layout = [[sg.Text('Select a value to sort by')],
-                      [sg.Combo(['ID', 'model', 'factory', 'plate'], key='-COMBO-')],
-                      [sg.Button('OK')]]
+            # New window to select the value to sort by
+            layout = ([[sg.Text('Select a value to sort by')],
+                       [sg.Combo(['ID', 'model', 'factory', 'plate'], key='-COMBO-', default_value='plate')],
+                       [sg.Button('OK')]])
             sort_window = sg.Window('Sort File', layout)
 
-            while True:  # Bucle de eventos para la nueva ventana
+            while True:  # Event Loop
                 sort_event, sort_values = sort_window.read()
-                if sort_event == sg.WINDOW_CLOSED or sort_event == 'OK':
+                if sort_event == 'OK':
+                    sort_window.close()
+
+                    df = pd.read_csv('Car.csv')
+
+                    # Order the DataFrame by the selected value
+                    df.sort_values(by=sort_values['-COMBO-'], inplace=True)
+
+                    # Write the sorted DataFrame back to the CSV file
+                    df.to_csv('Car.csv', index=False)
+                    break
+                elif sort_event == sg.WIN_CLOSED:
+                    break
+                else:
                     break
 
-            sort_window.close()
-
-            # Leer el archivo CSV en un DataFrame
-            df = pd.read_csv('Car.csv')
-
-            # Ordenar el DataFrame en base al valor seleccionado en el combo box
-            df.sort_values(by=sort_values['-COMBO-'], inplace=True)
-
-            # Escribir el DataFrame ordenado de nuevo en el archivo CSV
-            df.to_csv('Car.csv', index=False)
-
+        # Manage the event of purging the file
         if event == 'Purge':
             purgeCars(car_list2, table_data)
             window['-Table-'].update(table_data)
 
-
-
-
-
-
-    # Cierre de la ventana al salir del bucle
+    # close the window
     window.close()
 
 
-# Llamada a la función principal
+# call the function
 interfaz()
 
-# Cierre del archivo al finalizar el programa
+# End of GUIp.py

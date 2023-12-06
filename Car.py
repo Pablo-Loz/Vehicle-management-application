@@ -1,4 +1,5 @@
 class Car:
+    # Class variables for table headings and field labels
     headings = ['ID', 'Model', 'Factory Address', 'Plate']
     fields = {
         '-ID-': 'Car ID:',
@@ -7,20 +8,24 @@ class Car:
         '-Plate-': 'Plate:'
     }
 
-    def __init__(self, ID, model, bill, Plate):
+    def __init__(self, ID, model, factory, plate):
+        # Instance variables for car details
         self.ID = ID
         self.model = model
-        self.factory = bill
-        self.plate = Plate
+        self.factory = factory
+        self.plate = plate
         self.erased = False
 
-    def __eq__(self, oC):
-        return oC.ID == self.ID
+    def __eq__(self, other_car):
+        # Overriding the equality operator to compare cars based on their ID
+        return other_car.ID == self.ID
 
     def __str__(self):
+        # Overriding the string representation of the car object
         return str(self.ID) + str(self.model) + str(self.factory) + str(self.plate)
 
-    def setCar(self, name, bill, plate):
+    def set_car(self, name, factory, plate):
+        # Method to update car details
         self.name = name
-        self.factory = bill
+        self.factory = factory
         self.plate = plate

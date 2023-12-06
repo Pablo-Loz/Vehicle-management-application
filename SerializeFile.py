@@ -6,8 +6,8 @@ from Car import Car
 import pandas as pd
 
 
-def saveCarCSV(csv_filename, car):
-    # Crear un DataFrame de Pandas a partir del objeto Car
+def save_car_csv(csv_filename, car):
+    # Create a Pandas DataFrame from the Car object
     car_data = {
         "ID": [car.ID],
         "model": [car.model],
@@ -17,30 +17,45 @@ def saveCarCSV(csv_filename, car):
     }
     df = pd.DataFrame(car_data)
 
-    # Modo 'a' para agregar al final del archivo si ya existe
+    # 'a' mode to append at the end of the file if it already exists
     df.to_csv(csv_filename, mode='a', index=False, header=not pd.io.common.file_exists(csv_filename))
 
 
-def modifyCarCSV(csv_filename, car):
+def modify_car_csv(csv_filename, car):
+    # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_filename)
+
+    # Find the row that has the same ID as the car to be updated
     mask = df['ID'] == car.ID
+
+    # If such a row is found, update the values of that row with the new values of the car
     df.loc[mask, ['ID', 'model', 'factory', 'plate']] = [car.ID, car.model, car.factory, car.plate]
+
+    # Save the DataFrame back to the CSV file
     df.to_csv(csv_filename, index=False)
 
-def readCarCSV(csv_filename):
+
+def read_car_csv(csv_filename):
     try:
+        # Try to read the CSV file into a DataFrame
         df = pd.read_csv(csv_filename)
     except FileNotFoundError:
-        print(f"Error: El archivo {csv_filename} no fue encontrado.")
+        # Print an error message if the file is not found
+        print(f"Error: The file {csv_filename} was not found.")
         return []
 
     if df is None or df.empty:
-        print("Advertencia: El DataFrame está vacío.")
+        # Print a warning if the DataFrame is empty
+        print("Warning: The DataFrame is empty.")
         return []
 
+    # List that will store the Car objects
     car_list: list[Car] = []
+
+    # Iterate over the rows of the DataFrame
     for index, row in df.iterrows():
-        if row['erase'] == False:  # Solo añadir a la lista si 'erase' es False
+        # Only add to the list if 'erase' is False
+        if row['erase'] == False:
             car_list.append(Car(row['ID'], row['model'], row['factory'], row['plate']))
 
     return car_list
